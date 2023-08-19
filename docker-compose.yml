@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  nginx:
+    build:
+      context: ./docker
+      dockerfile: ./nginx/Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www/project
+      - ./docker/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php8.2-fpm
+      - postgres
+  php8.2-fpm:
+    build:
+      context: ./docker
+      dockerfile: ./php/Dockerfile
+    volumes:
+      - ./:/var/www/project
+    depends_on:
+      - postgres
+  postgres:
+    build:
+      context: ./docker
+      dockerfile: ./postgres/Dockerfile
+    restart: always
+    volumes:
+      - ./docker/postgres/data:/data/db
+    ports:
+      - ${POSTGRES_PORT}:5432
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  mongodb:
+    build:
+      context: ./docker
+      dockerfile: ./mongodb/Dockerfile
+    env_file: .env
+    volumes:
+      - ./docker/mongodb/data:/data/db
+      - ./docker/mongodb/log:/var/log/mongodb
+      # - ./docker/mongodb/init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./docker/mongodb/init/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+    ports:
+      - '27017:27017'
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
+      MONGO_DB_USERNAME: ${MONGO_DB_USERNAME}
+      MONGO_DB_PASSWORD: ${MONGO_DB_PASSWORD}
